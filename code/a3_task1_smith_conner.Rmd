@@ -1,0 +1,113 @@
+---
+title: "Assignemtn 3 - Task 1"
+author: "Conner Smith"
+date: "2/12/2022"
+output: 
+  html_document: 
+    theme: flatly
+    code_folding: hide
+---
+
+```{r setup, include=TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(here)
+library(broom)
+library(ggfortify)
+library(cowplot)
+library(kableExtra)
+library(janitor)
+```
+
+## **Overview**
+
+This analysis looks at several key country level envirionmental variables to determine relationships between these variables. Specifically, crop cover, tree cover, rainfall, elevation, and temperature patterns are considered to establish this assessment. This was compiled from the Google Earth Engine which consolidates publicly available remote sensing data.   
+
+## **Analysis**
+
+```{r}
+# Read in the data 
+
+world_env <- read_csv(here('data', 'world_env_vars.csv'))
+```
+
+The following presents the results of a principle components anaysis on several selected environemtnal variables by country. 
+
+```{r}
+# Filter the data to set up the PCA 
+
+world_clean <- world_env %>% 
+  column_to_rownames('Country') %>% 
+  select(elevation, cropland_cover, 
+         tree_canopy_cover, rain_mean_annual,
+         temp_annual_range, temp_mean_annual, wind, cloudiness) %>%
+  clean_names('title') %>% 
+  drop_na()
+
+# Now conduct the PCA 
+
+world_pca <- world_clean %>% 
+  scale() %>% 
+  prcomp()
+
+pca_summary <- summary(world_pca)
+```
+
+#### **Figure 1: World Environmental Data Variable Exploration**
+```{r, fig.height= 7, fig.width= 7}
+# Build the biplot using the 'autoplot function.
+
+biplot<- autoplot(world_pca,
+         data = world_clean, 
+         loadings = TRUE,
+         loadings.label = TRUE,
+         loadings.colour = 'black',
+         loadings.label.colour = 'black',
+         loadings.label.size = 2,
+         loadings.label.vjust = -0.7) +
+  theme_minimal()
+
+# Create the screeplot manually for more customization 
+
+sd_vec <- world_pca$sdev
+
+var_vec <- (sd_vec)^2
+
+pc_names <- colnames(world_pca$rotation)
+
+pct_expl_df <- data.frame(v = var_vec,
+                          pct_v = var_vec/ sum(var_vec),
+                          pc = fct_inorder(pc_names)) %>% 
+  mutate(pct_label = paste0(round(pct_v * 100, 1), '%'))
+
+# Create an object for the plot 
+
+scree <- ggplot(pct_expl_df, aes(x = pc, y = v)) +
+  geom_col() +
+  geom_text(aes(label = pct_label,
+                vjust = 0, nudge_y = 0.005)) +
+              labs(x = 'Principle Component',
+                   y = 'Variance Estimated')
+
+#Combine the plots using 'cowplot'
+
+plot_grid(biplot, scree,
+                   ncol = 1,
+                   rel_heights = c(1.5, 1))
+
+
+```
+
+##### **Figure 1:** *This figure presents a biplot and screeplot afrom a principle components analysis on the a range of environemntal variables by country.*
+
+From **Figure 1**, we can determine the following:
+
+- Almost 90 percent of variance is accounted for in the first four principle components.
+- Tree canopy cover and average annual rainfall are closely correlated. 
+- Cloudiness and average annual temperature seem to have no relationship.
+- Cropland cover and annual mean temperature seem to have a negative relationship. 
+
+### **Data Citation**
+
+*Venter, Z. and W.G. Whitford. 2018. Environmental variables for world countries. Kaggle. https://www.kaggle.com/zanderventer/environmental-variables-for-world-countries/metadata*
