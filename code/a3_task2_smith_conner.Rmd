@@ -1,0 +1,98 @@
+---
+title: "Santa Barbara Stream Chemistry Clustering Analysis"
+author: "Conner Smith"
+date: "2/13/2022"
+output:
+  html_document: 
+    theme: flatly
+    code_folding: hide
+---
+
+```{r setup, include=TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(here)
+library(NbClust)
+library(cluster)
+library(ggdendro)
+library(dendextend)
+library(factoextra)
+```
+
+## **Overview**
+
+This analysis looks at stream chemistry data collected by the Santa Barbara Long Term Ecological Research Network through the Environmental Data Initiative. This analysis performs hierarchical clustering to determine relationships between measured variables by site. Doing so reveals several sites that stand apart from the rest in terms fo stream chemistry and could determine the need for a closer look at chemical inputs in these catchments.    
+
+### **Analysis**
+
+```{r}
+# Read in the data 
+
+stream_raw <- read_csv(here('data',
+                            'sbc_lter_registered_stream_chemistry.csv'))
+
+# -999.0 and -999 are invalid values 
+stream_clean <- stream_raw %>% 
+  na_if(-999.0) %>% 
+  na_if(-999)
+```
+
+The first part of this analysis creates mean values for all the variables and scales the range to allow for the hierarchical clustering below. Several sites (DV01, BC02, TO02, and SP02) have unreported values for several variables. These sites were not exlcuded from this analysis. 
+
+```{r}
+# Need to clean and group the data to generate means for all variables by site, dropping the NA values. 
+
+stream_sub <- stream_clean %>% 
+  group_by(site_code) %>% 
+  summarize_all(~mean(.x, na.rm = TRUE))
+
+# Note, dop_na command removes some streams that have no values recorded for some variables "NaN", keeping these in the data set 
+
+# Now scale the data (numeric values) to allow for clustering, use sites as rownames
+
+stream_scale <- stream_sub %>% 
+  column_to_rownames('site_code') %>% 
+  select(2:11) %>% 
+  scale()
+  
+```
+
+**Figure 1: Dendrogram of Clusters Based on Stream Site**
+```{r}
+# Hierarchical Cluster Analysis (agglomertive)
+
+stream_dist <- dist(stream_scale, method = 'euclidian')
+
+# Hierarchical clustering based on complete linkage 
+
+stream_hc_complete <- hclust(stream_dist, method = 'complete')
+
+# convert the object into a 'dendrogram'
+
+dend_compelte <- as.dendrogram(stream_hc_complete)
+
+# Create  plot of the dendrogram 
+
+ggdendrogram(stream_hc_complete, rotate = TRUE) +
+  theme_minimal() +
+  xlab('Site') +
+  ylab('Distance')
+```
+
+**Figure 1:** *This shows the results of the hierarchical clustering analysis across all stream sites in the LTER database.*
+
+### **Key Takeaways:**
+- This shows the site DV01 in its own grouping, possibly as a result of abnormally high values for variables like scaled ammonium concentration. 
+
+- All other sites are included in a grouping with two sub-groupings.
+
+- There are only three sites in one of these two sub-groupings, all of which have relatively high ammonia concentrations compared to other sites. 
+
+- Nine out of the 13 sites fit into one sub-grouping, indicating a closeness in observed variables for a majority of sites. 
+
+- This indicates a closer look should be taken for the sites that stand further outside of primary clusters. 
+
+### **Data Citation**
+
+*Santa Barbara Coastal LTER and J. Melack. 2019. SBC LTER: Land: Stream chemistry in the Santa Barbara Coastal drainage area, ongoing since 2000 ver 16. Environmental Data Initiative. https://doi.org/10.6073/pasta/67a558a24ceed9a0a5bf5e46ab841174 (Accessed 2022-02-13).*
