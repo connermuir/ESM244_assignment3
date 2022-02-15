@@ -1,5 +1,5 @@
 ---
-title: "Assignemtn 3 - Task 1"
+title: "Principle Component Analysis for World Environmental Data"
 author: "Conner Smith"
 date: "2/12/2022"
 output: 
@@ -13,7 +13,6 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(tidyverse)
 library(here)
-library(broom)
 library(ggfortify)
 library(cowplot)
 library(kableExtra)
@@ -22,7 +21,7 @@ library(janitor)
 
 ## **Overview**
 
-This analysis looks at several key country level envirionmental variables to determine relationships between these variables. Specifically, crop cover, tree cover, rainfall, elevation, and temperature patterns are considered to establish this assessment. This was compiled from the Google Earth Engine which consolidates publicly available remote sensing data.   
+This analysis looks at several key country level environmental variables to determine relationships between these variables. Specifically, crop cover, tree cover, rainfall, elevation, and temperature and weather patterns are considered to establish this assessment. This was compiled from the Google Earth Engine which consolidates publicly available remote sensing data.   
 
 ## **Analysis**
 
@@ -32,7 +31,7 @@ This analysis looks at several key country level envirionmental variables to det
 world_env <- read_csv(here('data', 'world_env_vars.csv'))
 ```
 
-The following presents the results of a principle components anaysis on several selected environemtnal variables by country. 
+The following presents the results of a principle components analysis on several selected environmental variables by country. It includes bith a biplot to show the relationship between variables and a screeplot showing the amount of variance captured in each principle component. 
 
 ```{r}
 # Filter the data to set up the PCA 
@@ -41,8 +40,8 @@ world_clean <- world_env %>%
   column_to_rownames('Country') %>% 
   select(elevation, cropland_cover, 
          tree_canopy_cover, rain_mean_annual,
-         temp_annual_range, temp_mean_annual, wind, cloudiness) %>%
-  clean_names('title') %>% 
+         temp_mean_annual, cloudiness) %>%
+  clean_names('title') %>% # Generates nice figure labels 
   drop_na()
 
 # Now conduct the PCA 
@@ -52,6 +51,9 @@ world_pca <- world_clean %>%
   prcomp()
 
 pca_summary <- summary(world_pca)
+# pca_summary
+
+# 90% of variance covered in first 4 components 
 ```
 
 #### **Figure 1: World Environmental Data Variable Exploration**
@@ -59,12 +61,14 @@ pca_summary <- summary(world_pca)
 # Build the biplot using the 'autoplot function.
 
 biplot<- autoplot(world_pca,
-         data = world_clean, 
+         data = world_clean,
+         colour = 'blue',
+         alpha = 0.5,
          loadings = TRUE,
          loadings.label = TRUE,
          loadings.colour = 'black',
          loadings.label.colour = 'black',
-         loadings.label.size = 2,
+         loadings.label.size = 3,
          loadings.label.vjust = -0.7) +
   theme_minimal()
 
@@ -103,10 +107,15 @@ plot_grid(biplot, scree,
 
 From **Figure 1**, we can determine the following:
 
-- Almost 90 percent of variance is accounted for in the first four principle components.
+- More than 90 percent of variance is accounted for in the first four principle components.
+
 - Tree canopy cover and average annual rainfall are closely correlated. 
+
 - Cloudiness and average annual temperature seem to have no relationship.
+
 - Cropland cover and annual mean temperature seem to have a negative relationship. 
+
+- Cropland cover and elevation are clsoely correlated. 
 
 ### **Data Citation**
 
