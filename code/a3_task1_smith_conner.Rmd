@@ -21,7 +21,16 @@ library(janitor)
 
 ## **Overview**
 
-This analysis looks at several key country level environmental variables to determine relationships between these variables. Specifically, crop cover, tree cover, rainfall, elevation, and temperature and weather patterns are considered to establish this assessment. This was compiled from the Google Earth Engine which consolidates publicly available remote sensing data.   
+This analysis looks at several key country level environmental variables to determine relationships between these variables. Specifically, the analysis considers the following variables: 
+
+- Cropland Cover (% of total country land mass);
+- Tree Canopy Cover (% of total country land mass);
+- Average Annual Rainfall (mm);
+- Elevation (m, average);
+- Average Annual Temperature (Degrees Celsius);
+- Cloudiness (Average days per year)
+
+These variables are scaled and comapred using principle comonents analysis to determine relationbships between environemntal indicesacross countires. A biplot is included to visualize these relationships as well as a screeplot depicting how much variance in the chosen variables is represented in each principle component. Data  was compiled by Zander Venter on Kaggle pulling from the Google Earth Engine which consolidates publicly available remote sensing data.   
 
 ## **Analysis**
 
@@ -31,29 +40,30 @@ This analysis looks at several key country level environmental variables to dete
 world_env <- read_csv(here('data', 'world_env_vars.csv'))
 ```
 
-The following presents the results of a principle components analysis on several selected environmental variables by country. It includes bith a biplot to show the relationship between variables and a screeplot showing the amount of variance captured in each principle component. 
+The following presents the results of a principle components analysis on the selected environmental variables by country. It includes both a biplot to show the relationship between variables and a screeplot showing the amount of variance captured in each principle component. 
 
 ```{r}
-# Filter the data to set up the PCA 
+# Filter the data to set up the PCA using the selected variables 
 
 world_clean <- world_env %>% 
-  column_to_rownames('Country') %>% 
+  column_to_rownames('Country') %>% # PCA can only use numeric values so country anmes are converted to row names 
   select(elevation, cropland_cover, 
          tree_canopy_cover, rain_mean_annual,
          temp_mean_annual, cloudiness) %>%
-  clean_names('title') %>% # Generates nice figure labels 
+  clean_names('title') %>% # Generates nice figure labels without having to use `rename`
   drop_na()
+# This loses a few countries 
 
 # Now conduct the PCA 
 
 world_pca <- world_clean %>% 
-  scale() %>% 
+  scale() %>% #scaling to allow for comparisson 
   prcomp()
 
 pca_summary <- summary(world_pca)
 # pca_summary
 
-# 90% of variance covered in first 4 components 
+# 90% of variance covered in first 4 components, this is a key highlight for below. 
 ```
 
 #### **Figure 1: World Environmental Data Variable Exploration**
@@ -62,11 +72,11 @@ pca_summary <- summary(world_pca)
 
 biplot<- autoplot(world_pca,
          data = world_clean,
-         colour = 'blue',
+         colour = 'cadetblue',
          alpha = 0.5,
          loadings = TRUE,
          loadings.label = TRUE,
-         loadings.colour = 'black',
+         loadings.colour = 'darkseagreen',
          loadings.label.colour = 'black',
          loadings.label.size = 3,
          loadings.label.vjust = -0.7) +
@@ -88,7 +98,7 @@ pct_expl_df <- data.frame(v = var_vec,
 # Create an object for the plot 
 
 scree <- ggplot(pct_expl_df, aes(x = pc, y = v)) +
-  geom_col() +
+  geom_col(fill = 'darkseagreen') +
   geom_text(aes(label = pct_label,
                 vjust = 0, nudge_y = 0.005)) +
               labs(x = 'Principle Component',
@@ -103,19 +113,23 @@ plot_grid(biplot, scree,
 
 ```
 
-##### **Figure 1:** *This figure presents a biplot and screeplot afrom a principle components analysis on the a range of environemntal variables by country.*
+##### **Figure 1:** *This figure presents a biplot and screeplot afrom a principle components analysis on the a range of environmental variables by country.*
 
-From **Figure 1**, we can determine the following:
+From **Figure 1**, we can determine the following key takeaways from this analysis:
 
 - More than 90 percent of variance is accounted for in the first four principle components.
 
-- Tree canopy cover and average annual rainfall are closely correlated. 
+- The first two principle components do a good job capturing a majority of the variance (68%) in the selected variable, indicating several relationships.
 
-- Cloudiness and average annual temperature seem to have no relationship.
+- The percentage of variance accounted for by the second principle component drops by half and then drops further after the third component. 
 
-- Cropland cover and annual mean temperature seem to have a negative relationship. 
+- Tree canopy cover and average annual rainfall are closely correlated. Cloudiness is also positively correlated, all aspects we would expect as large forests can help generate regional weather patterns. 
 
-- Cropland cover and elevation are clsoely correlated. 
+- Cloudiness and average annual temperature seem to have no relationship. While more cloudy days could be expected to lower average annual temperature, the lack of correlation could be explained by significant cloudiness in both high latitude (colder) regions as well as in tropical regions.  
+
+- Cropland cover and annual mean temperature seem to have a negative relationship. This could be explained by large regions of unbearable land as well as tropical rain forests around the equator.  
+
+- Cropland cover and tree cover have a slightly negative correlation. However, this relationship is less strong as one might expect if assuming cropland is displacing forest land. 
 
 ### **Data Citation**
 
