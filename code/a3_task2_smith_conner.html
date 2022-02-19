@@ -187,7 +187,6 @@ pre code {
 
 library(tidyverse)
 library(here)
-library(broom)
 library(NbClust)
 library(cluster)
 library(ggdendro)
@@ -195,7 +194,14 @@ library(dendextend)
 library(factoextra)</code></pre>
 <div id="overview" class="section level2">
 <h2><strong>Overview</strong></h2>
-<p>This analysis looks at stream chemistry data collected by the Santa Barbara Long Term Ecological Research Network through the Environmental Data Initiative. This analysis performs hierarchical clustering to determine relationships between measured variables by site. Doing so reveals several sites that stand apart from the rest in terms fo stream chemistry and could determine the need for a closer look at chemical inputs in these catchments.</p>
+<p>This analysis looks at stream chemistry data collected by the Santa Barbara Long Term Ecological Research Network through the Environmental Data Initiative. Data collection began in 2000 and is current through 2018. This analysis performs hierarchical clustering to create groupings of different stream sites based on several measured water chemistry variables. Several of these variables include:</p>
+<ul>
+<li>Ammonium (NH4);</li>
+<li>Nitrate (NO3);</li>
+<li>Phosphate (PO4);</li>
+<li>Total Suspended Solids</li>
+</ul>
+<p>The analysis reveals several sites that stand apart from the rest in terms of different chemical loadings. Standalone groupings for some stream locations and high levels of Nitrates in particular, which have detrimental impacts on human health at high concentrations in drinking water, could determine the need for treatments to mitigate chemical inputs in these stream catchments.</p>
 <div id="analysis" class="section level3">
 <h3><strong>Analysis</strong></h3>
 <pre class="r"><code># Read in the data 
@@ -207,7 +213,7 @@ stream_raw &lt;- read_csv(here(&#39;data&#39;,
 stream_clean &lt;- stream_raw %&gt;% 
   na_if(-999.0) %&gt;% 
   na_if(-999)</code></pre>
-<p>The first part of this analysis creates mean values for all the variables and scales the range to allow for the hierarchical clustering below.</p>
+<p>The first part of this analysis creates mean values for all the variables and scales the range to allow for the hierarchical clustering below. Four sites (DV01, BC02, TO02, and SP02) have unreported values for several variables. These sites were not excluded from this analysis.</p>
 <pre class="r"><code># Need to clean and group the data to generate means for all variables by site, dropping the NA values. 
 
 stream_sub &lt;- stream_clean %&gt;% 
@@ -247,11 +253,11 @@ ggdendrogram(stream_hc_complete, rotate = TRUE) +
 <div id="key-takeaways" class="section level3">
 <h3><strong>Key Takeaways:</strong></h3>
 <ul>
-<li><p>This shows the site DV01 in its own grouping, possibly as a result of abnormally high values for variables like scaled ammonium concentration.</p></li>
+<li><p>This dendrogram shows the site DV01 in its own grouping, possibly as a result of abnormally high values for variables like scaled ammonium concentration.</p></li>
 <li><p>All other sites are included in a grouping with two sub-groupings.</p></li>
 <li><p>There are only three sites in one of these two sub-groupings, all of which have relatively high ammonia concentrations compared to other sites.</p></li>
 <li><p>Nine out of the 13 sites fit into one sub-grouping, indicating a closeness in observed variables for a majority of sites.</p></li>
-<li><p>This indicates a closer look should be taken for the sites that stand further outside of primary clusters.</p></li>
+<li><p>This dendrogram could help water and environmental managers determine and prioritize stream catchments that stand further outside of primary clusters based on higher than average concenrations of certain chemical compounds.</p></li>
 </ul>
 </div>
 <div id="data-citation" class="section level3">
